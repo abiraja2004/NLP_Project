@@ -180,7 +180,6 @@ print(answer('data/set2/a8.txt','How far away is Mu Herculis from Earth?'))
 print(answer('data/set2/a8.txt','What are the two bright globular clusters contained in Hercules?'))
 print(answer('data/set3/a6.txt','Where is the Latin alphabet derived from?'))
 print(answer('data/set3/a7.txt','How are conditional expressions written in Python?'))
-print(answer('data/set2/a10.txt','What is Crus commonly known as?'))
 
 print(answer('data/set3/a10.txt','why people can create new words of Esperanto?'))
 print(answer('data/set3/a10.txt','Why Zamenhof created Esperanto?'))
@@ -200,6 +199,8 @@ print(answer('data/set3/a10.txt','How many counties used Esperanto?'))
 print(answer('data/set3/a10.txt','How many native speakers speaker Esperanto?'))
 print(answer('data/set3/a10.txt','what does Esperanto\'s name derive from?'))
 print(answer('data/set3/a9.txt','How many reported developers for java?'))
+print(answer('data/set2/a10.txt','What is Crus commonly known as?'))
+
 # incorrect "second"
 print(answer('data/set3/a9.txt','What is the second latest version of Java?'))
 
