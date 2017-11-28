@@ -1,11 +1,24 @@
-import nltk,math
+import nltk,math,re
 from nltk.tokenize import sent_tokenize
 from nltk.tokenize import word_tokenize
+from nltk.tag import StanfordNERTagger
+NERTagger = StanfordNERTagger(model_filename = '/Users/jhl/Desktop/stanford-ner-2017-06-09/classifiers/english.all.3class.distsim.crf.ser.gz',\
+                               path_to_jar = '/Users/jhl/Desktop/stanford-ner-2017-06-09/stanford-ner.jar')
 
 YESNOSTART = set(["is",'are','am','was','were',
                 'do','does','did','has','have','had','can',
                 'could','would','might'])
 NEGATION = set(['not','no',"n't","unlike"])
+
+QUESTIONNE = {
+        "who": "PERSON",
+        "where": "LOCATION",
+}
+
+TIME = set(["January", "February", "March", "April","May","June","July","August",
+    "September","October","November","December"])
+REASON = set(["because", "for","as","since", "considering","inasmuch","owing",
+    "seeing"])
 
 
 def similarity(s1,s2,idfDict):
@@ -97,6 +110,21 @@ def findBesttfidf(file,qtokens):
                 bestAns = ss
     return (bestAns)
 
+
+def best5(file,question):
+    bestSim = 0
+    bestAns = None
+    docLength = 0
+    idfDict = getIdfs(file)
+    sims = []
+    for sentence in file:
+        s = sent_tokenize(sentence)
+        for ss in s:
+            thisSim = similarity(question,word_tokenize(ss),idfDict)
+            sims.append((ss, thisSim))
+    sortedSim = sorted(sims, key=lambda sentence: sentence[1],reverse = True)
+    return (sortedSim[0:5])
+
 def questionType(q):
     # function that takes in a list of tokens to get the question type
     if q[0].lower() in YESNOSTART:
@@ -134,14 +162,51 @@ def whereToAns(qtokens,rawAns):
 def whichToAns(qtokens,rawAns):
     return rawAns
 
+def locateUsingNer(best5Sen, qtype, q):
+    senLiteral = [sen[0] for sen in best5Sen]
+    if qtype in ["yesno","what","which"]:
+        return senLiteral[0]
+    if qtype == "who" or qtype == "where": 
+        for sen in senLiteral:
+            tagged = NERTagger.tag(word_tokenize(sen))
+            for (word,tag) in tagged:
+                if qtype == "who" and tag == "PERSON":
+                    return sen
+                if qtype == "where" and tag == "LOCATION":
+                    return sen
+    if qtype == "when":
+        for sen in senLiteral:
+            for w in word_tokenize(sen):
+                if w.isdigit() or w in TIME:
+                    return sen
+    if qtype == "why":
+        for sen in senLiteral:
+            for w in word_tokenize(sen):
+                if w.lower() in REASON:
+                    return sen
+    
+    if qtype == "how":
+        qt = word_tokenize(q)
+        if qt[1] == "many":
+            for sen in senLiteral:
+                for w in word_tokenize(sen):
+                    if w.isdigit():
+                        return sen
+    return senLiteral[0]
+
 def answer(file, question):
     f = open(file)
     ff = f.read().splitlines()                  # splitlines to avoid whitespace issue
 
     qtokens = word_tokenize(question)           # tokenized question
 
-    rawAnswer = (findBesttfidf(ff, qtokens))    # string of the most similar sentence
+    qtype = questionType(qtokens)
 
+    best5Sen = (best5(ff, qtokens))    # string of the most similar sentence
+    if best5Sen[0][1] > 0.45:
+        rawAnswer = best5Sen[0][0]    # string of the most similar sentence
+    else:
+        rawAnswer = locateUsingNer(best5Sen, qtype, question)
     # process the raw answer according to the type
     if questionType(qtokens) == "yesno":
         return rawToYesNo(qtokens,rawAnswer)
@@ -162,7 +227,7 @@ def answer(file, question):
 
 # correctly answered questions:
 
-"""
+
 print(answer('data/set2/a8.txt','Does Hercules have first or second magnitude stars?'))
 print(answer('data/set2/a10.txt','Is Coalsack Nebula the most prominent dart nebula is the skies?'))
 print(answer('data/set2/a8.txt','Is Hercules the fifth largest of the modern constellations?'))
@@ -172,9 +237,10 @@ print(answer('data/set3/a9.txt','Is the method name "main" a keyword in Java?'))
 print(answer('data/set3/a9.txt','Does java use a garbage collector to manage memory?'))
 print(answer('data/set3/a9.txt','Does java support C/C++ style pointer arithmetic?'))
 
-"""
 
 # questions that can return the correct sentence but need to extract the answer.
+
+
 print(answer('data/set1/a6.txt','Who was Milan\'s chief executive in 2008?'))
 print(answer('data/set2/a8.txt','How far away is Mu Herculis from Earth?'))
 print(answer('data/set2/a8.txt','What are the two bright globular clusters contained in Hercules?'))
@@ -188,24 +254,37 @@ print(answer('data/set3/a10.txt','What is the most widely spoken constructed lan
 
 print(answer('data/set3/a9.txt','What is WORA'))
 print(answer('data/set3/a9.txt','Which version of java is supported for free by Oracle'))
-
+print(answer('data/set3/a10.txt','How many countries used Esperanto?'))
 
 # questions that cannot
 # main problems: questions too short to match. NER?
 print(answer('data/set1/a10.txt','where was John Terry born?'))
+print("")
+print("Q:what formed six diphthongs?")
+
 print(answer('data/set3/a10.txt','what formed six diphthongs?'))
+print("Q:when was Esperanto created?")
+
 print(answer('data/set3/a10.txt','when was Esperanto created?'))
-print(answer('data/set3/a10.txt','How many counties used Esperanto?'))
+
+print("Q：How many native speakers speaker Esperanto?")
+
+
 print(answer('data/set3/a10.txt','How many native speakers speaker Esperanto?'))
+print("Q：what does Esperanto\'s name derive from?")
+
 print(answer('data/set3/a10.txt','what does Esperanto\'s name derive from?'))
+
 print(answer('data/set3/a9.txt','How many reported developers for java?'))
+print("How many reported developers for java?")
+
 print(answer('data/set2/a10.txt','What is Crus commonly known as?'))
 
-# incorrect "second"
-print(answer('data/set3/a9.txt','What is the second latest version of Java?'))
+# # incorrect "second"
+# print(answer('data/set3/a9.txt','What is the second latest version of Java?'))
 
-# incorrect answer, few vs many
-print(answer('data/set3/a9.txt','Does java have as many low-level facilities as C and C++?'))
+# # incorrect answer, few vs many
+# print(answer('data/set3/a9.txt','Does java have as many low-level facilities as C and C++?'))
 
 
 
