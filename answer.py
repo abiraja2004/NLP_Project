@@ -2,6 +2,10 @@ import nltk,math,re
 from nltk.tokenize import sent_tokenize
 from nltk.tokenize import word_tokenize
 from nltk.tag import StanfordNERTagger
+from nltk.stem.porter import *
+
+stemmer = PorterStemmer()
+
 NERTagger = StanfordNERTagger(model_filename = '/Users/jhl/Desktop/stanford-ner-2017-06-09/classifiers/english.all.3class.distsim.crf.ser.gz',\
                                path_to_jar = '/Users/jhl/Desktop/stanford-ner-2017-06-09/stanford-ner.jar')
 
@@ -79,7 +83,7 @@ def getIdfs(file):
     sentenceNumber = 0
     for line in file:
         for sentence in sent_tokenize(line):
-            ws = [w.lower() for w in word_tokenize(sentence)]
+            ws = [stemmer.stem(w.lower()) for w in word_tokenize(sentence)]
             sentenceNumber += 1
             for wlower in set(ws):
                 if wlower in idfs:
@@ -91,36 +95,18 @@ def getIdfs(file):
     return idfs
 
 
-def findBesttfidf(file,qtokens):
-    # function to return the sentence in the file that has the best tf-idf cos
-    # similarity
-    bestSim = 0
-    bestAns = None
-    docLength = 0
-    idfDict = getIdfs(file)
-    for sentence in file:
-        s = sent_tokenize(sentence)
-        for ss in s:
-            # print(qtokens,sentence.split())
-            thisSim = similarity(qtokens,word_tokenize(ss),idfDict)
-            # print(thisSim)
-            if bestSim < thisSim:
-                # print(thisSim,sentence)
-                bestSim = thisSim
-                bestAns = ss
-    return (bestAns)
-
-
 def best5(file,question):
     bestSim = 0
     bestAns = None
     docLength = 0
     idfDict = getIdfs(file)
     sims = []
+    question = [stemmer.stem(w) for w in question]
     for sentence in file:
         s = sent_tokenize(sentence)
         for ss in s:
-            thisSim = similarity(question,word_tokenize(ss),idfDict)
+            ssw = [stemmer.stem(w.lower()) for w in word_tokenize(ss)]
+            thisSim = similarity(question,ssw,idfDict)
             sims.append((ss, thisSim))
     sortedSim = sorted(sims, key=lambda sentence: sentence[1],reverse = True)
     return (sortedSim[0:5])
@@ -136,10 +122,10 @@ def rawToYesNo(qtokens, answer):
     qneg = 0
     aneg = 0
     for tok in qtokens:
-        if tok.lower() in NEGATION:
+        if stemmer.stem(tok.lower()) in NEGATION:
             qneg += 1
     for tok in word_tokenize(answer):
-        if tok.lower() in NEGATION:
+        if stemmer.stem(tok.lower()) in NEGATION:
             aneg += 1
     if qneg == aneg:
         return "Yes."
