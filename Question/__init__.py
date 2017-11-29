@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time    : 10/26/2017 1:52 PM
+# @Time    : 10/19/2017 10:07 PM
 # @Author  : Mingfei Jia
 # @Site    : 
 # @File    : __init__.py.py
 # @Software: PyCharm
-
 import nltk
 
 def count_noun(file_name):
@@ -23,13 +22,13 @@ def count_noun(file_name):
     #print(tags)
     #print(total_count)
 
-count_noun("../data/set1/a1.txt")
-count_noun("../data/set1/a2.txt")
-count_noun("../data/set1/a3.txt")
-count_noun("../data/set1/a4.txt")
-count_noun("../data/set1/a5.txt")
-count_noun("../data/set1/a6.txt")
-count_noun("../data/set1/a7.txt")
-count_noun("../data/set1/a8.txt")
-count_noun("../data/set1/a9.txt")
-count_noun("../data/set1/a10.txt")
+count_noun("./data/set1/a1.txt")
+count_noun("./data/set1/a2.txt")
+count_noun("./data/set1/a3.txt")
+count_noun("./data/set1/a4.txt")
+count_noun("./data/set1/a5.txt")
+count_noun("./data/set1/a6.txt")
+count_noun("./data/set1/a7.txt")
+count_noun("./data/set1/a8.txt")
+count_noun("./data/set1/a9.txt")
+count_noun("./data/set1/a10.txt")
