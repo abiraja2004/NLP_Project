@@ -1,0 +1,9 @@
+Does java support C/C++ style pointer arithmetic?
+Which version of java is supported for free by Oracle
+Does java have as many low-level facilities as C and C++?
+Does java use a garbage collector to manage memory?
+What is the second latest version of Java?
+How many reported developers for java?
+What is WORA
+Does java combine the syntax for structured, generic and object-oriented programming?
+Is the method name "main" a keyword in Java?

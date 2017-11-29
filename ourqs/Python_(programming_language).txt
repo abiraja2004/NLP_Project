@@ -1,0 +1,9 @@
+Are code that does not use Python idioms well considered Pythonic?
+Can most Python implementations function as a command line interpreter?
+Does Stackless Python use the C memory stack?
+How are conditional expressions written in Python?
+What is the rank of the popularity of Python in 2016 measured by the TIOBE Index?
+Does the design philosphy of Python emphasize code readability?
+When did the implementation of Python start?
+Does Python allow not well-defined operations?
+What is CPython?
