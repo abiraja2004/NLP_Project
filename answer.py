@@ -1,4 +1,5 @@
 import nltk,math,re
+from bm25 import *
 from nltk.tokenize import sent_tokenize
 from nltk.tokenize import word_tokenize
 from nltk.tag import StanfordNERTagger
@@ -102,12 +103,18 @@ def best5(file,question):
     idfDict = getIdfs(file)
     sims = []
     question = [stemmer.stem(w) for w in question]
-    for sentence in file:
-        s = sent_tokenize(sentence)
-        for ss in s:
-            ssw = [stemmer.stem(w.lower()) for w in word_tokenize(ss)]
-            thisSim = similarity(question,ssw,idfDict)
-            sims.append((ss, thisSim))
+
+    # lambdas to be tuned later
+    lambda1 = 0.7 # lambda for the tf-idf written above
+    lambda2 = 0.3 # lambda for the bm25 score from gensim bm25
+    bm25res = getbm25(question, file)
+
+    for sentence in bm25res:
+        s = sentence[0]
+        bm25sim = sentence[1]
+        ssw = [stemmer.stem(w.lower()) for w in word_tokenize(s)]
+        thisSim = similarity(question,ssw,idfDict)
+        sims.append((s, (lambda1*thisSim+lambda2*bm25sim)))
     sortedSim = sorted(sims, key=lambda sentence: sentence[1],reverse = True)
     return (sortedSim[0:5])
 
@@ -188,8 +195,9 @@ def answer(file, question):
 
     qtype = questionType(qtokens)
 
-    best5Sen = (best5(ff, qtokens))    # string of the most similar sentence
-    if best5Sen[0][1] > 0.45:
+    best5Sen = (best5(ff, qtokens))   # string of the most similar sentence
+    # print(best5Sen)
+    if best5Sen[0][1] > 0.8:
         rawAnswer = best5Sen[0][0]    # string of the most similar sentence
     else:
         rawAnswer = locateUsingNer(best5Sen, qtype, question)
