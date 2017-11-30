@@ -200,7 +200,12 @@ def genWhatQuestion(parse_tree):
                     present_tense = lemmatizer.lemmatize(curr_word,'v')
                     return "What did "+' '+words[0].lower()+' '+' '.join(words[1:be_verb_index])+' '+present_tense+'?'
                 # process be verbs
-                elif tag_npvp.leaves()[0] in be_verbs:
+            elif tag_npvp.leaves()[0] in be_verbs:
+                check_VBN = next_pos.startswith('VBN')
+                check_RB_VBN = next_pos.startswith('RB') and next_next_pos.startswith('VBN')
+                check_VBN_RB = next_pos.startswith('VBN') and next_next_pos.startswith('RB')
+                (first_word,first_pos) = tags[0]
+                if not check_VBN and not check_VBN_RB and not check_RB_VBN:
                     be_verb = tag_npvp.leaves()[0]
                     # if the next word is adj.
                     if next_pos.startswith('JJ'):
@@ -211,7 +216,7 @@ def genWhatQuestion(parse_tree):
                         return "What " + be_verb + ' ' + ' '.join(words[be_verb_index + 2:len(words) - 1]) + '?'
                     # else if the length of NP part is longer than 3
                     # question on the second part.
-                    elif be_verb_index > 1:
+                    elif not (first_pos.startswith('PRP') and be_verb_index < 2):
                         return "What " + be_verb + ' ' + words[0].lower() + ' ' + " ".join(words[1:be_verb_index]) + "?"
 
     return None
@@ -224,13 +229,14 @@ def genYesNoQuestion(parse_tree):
     words = parse_tree.leaves()
     tags = parse_tree.pos()
     # print(parse_tree)
+    (first_word,first_pos) = tags[0]
     for tag_s in parse_tree:
         for tag_npvp in tag_s:
             if tag_npvp.label() == 'NP':
                 # length of these words is the index of the first word of VP part
                 be_verb_index = len(tag_npvp.leaves())
             # if the first word in VP part is be verb
-            if tag_npvp.label() == 'VP' and be_verb_index > 1:
+            if tag_npvp.label() == 'VP' and not(first_pos.startswith('PRP') and be_verb_index < 2):
                 if tag_npvp.leaves()[0] in be_verbs:
                     be_verb = tag_npvp.leaves()[0]
                     return be_verb.title() + ' ' + words[0].lower() + ' ' + ' '.join(words[1:be_verb_index]) + ' ' + ' '.join(words[be_verb_index + 1:len(words) - 1]) + '?'
