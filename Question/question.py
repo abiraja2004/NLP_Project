@@ -9,14 +9,15 @@ import os
 import sys
 from nltk.stem.wordnet import WordNetLemmatizer
 
-# NERTagger = StanfordNERTagger(
-#     model_filename='stanford-ner-2017-06-09/classifiers/english.all.3class.distsim.crf.ser.gz',
-#     path_to_jar='stanford-ner-2017-06-09/stanford-ner.jar')
-#
-# POSTagger = StanfordPOSTagger('stanford-postagger-full-2017-06-09/models/english-bidirectional-distsim.tagger',
-#                               'stanford-postagger-full-2017-06-09/stanford-postagger.jar')
-#
-# LOCATIONS = ["in", "at", "on", "inside", "opposite", "beside", "above", "behind", "down"]
+HOME_TO_STANFORDNLP = 'E:/CMU/Natural Language Processing/StanfordNLP/'
+NERTagger = StanfordNERTagger(
+    model_filename=HOME_TO_STANFORDNLP+'stanford-ner-2017-06-09/classifiers/english.all.3class.distsim.crf.ser.gz',
+    path_to_jar=HOME_TO_STANFORDNLP+'stanford-ner-2017-06-09/stanford-ner.jar')
+
+POSTagger = StanfordPOSTagger(HOME_TO_STANFORDNLP+'stanford-postagger-full-2017-06-09/models/english-bidirectional-distsim.tagger',
+                              HOME_TO_STANFORDNLP+'stanford-postagger-full-2017-06-09/stanford-postagger.jar')
+
+LOCATIONS = ["in", "at", "on", "inside", "opposite", "beside", "above", "behind", "down"]
 
 
 def checkNPVP(parse_tree):
@@ -63,16 +64,25 @@ def getSentence(file_name, num_sentence):
         if valid_parse_tree:
             who_question = genWhoQuestion(valid_parse_tree)
             what_question = genWhatQuestion(valid_parse_tree)
-            yn_question = genYesNoQuestion(valid_parse_tree)
+            yn_question_right = genYesNoQuestion(valid_parse_tree,False)
+            yn_question_wrong = genYesNoQuestion(valid_parse_tree,True)
+            # why_question = genWhyQuestion(valid_parse_tree)
+            # where_question = getWhereQuestion(valid_parse_tree)
             if who_question:
                 index += 1
                 print("Question " + str(index) + ": " + who_question)
             if what_question:
                 index += 1
                 print("Question " + str(index) + ": " + what_question)
-            if yn_question:
+            if yn_question_right:
                 index += 1
-                print("Question " + str(index) + ": " + yn_question)
+                print("Question " + str(index) + ": " + yn_question_right)
+            if yn_question_wrong:
+                index += 1
+                print("Question " + str(index) + ": " + yn_question_wrong)
+            # if why_question:
+            #     index += 1
+            #     print("Question " + str(index) + ": " + why_question)
 
     while index < num_sentence:
         index += 1
@@ -216,13 +226,13 @@ def genWhatQuestion(parse_tree):
                         return "What " + be_verb + ' ' + ' '.join(words[be_verb_index + 2:len(words) - 1]) + '?'
                     # else if the length of NP part is longer than 3
                     # question on the second part.
-                    elif not (first_pos.startswith('PRP') and be_verb_index < 2):
+                    elif not (first_pos.startswith('PRP') and be_verb_index < 3):
                         return "What " + be_verb + ' ' + words[0].lower() + ' ' + " ".join(words[1:be_verb_index]) + "?"
 
     return None
 
 
-def genYesNoQuestion(parse_tree):
+def genYesNoQuestion(parse_tree, set_wrong):
     be_verbs = ['is', 'are', 'was', 'were']
     prp = ['It', 'This', 'That', 'These', 'Those']
     lemmatizer = WordNetLemmatizer()
@@ -230,13 +240,33 @@ def genYesNoQuestion(parse_tree):
     tags = parse_tree.pos()
     # print(parse_tree)
     (first_word,first_pos) = tags[0]
+    done_set = False
+    if set_wrong:
+        set_wrong_index = 0
+        for word,tag in tags:
+            if tag.startswith('CD'):
+                if word.isalpha() and word.lower() != 'one':
+                    if word.lower() != 'five':
+                        words[set_wrong_index] = 'five'
+                    else:
+                        words[set_wrong_index] = 'six'
+                    done_set = True
+                elif word.isdigit() and len(word)==4:
+                    words[set_wrong_index] = '2018'
+                    done_set = True
+                break
+            set_wrong_index += 1
+        if not done_set:
+            return None
+
+
     for tag_s in parse_tree:
         for tag_npvp in tag_s:
             if tag_npvp.label() == 'NP':
                 # length of these words is the index of the first word of VP part
                 be_verb_index = len(tag_npvp.leaves())
             # if the first word in VP part is be verb
-            if tag_npvp.label() == 'VP' and not(first_pos.startswith('PRP') and be_verb_index < 2):
+            if tag_npvp.label() == 'VP' and not(first_pos.startswith('PRP') and be_verb_index < 3):
                 if tag_npvp.leaves()[0] in be_verbs:
                     be_verb = tag_npvp.leaves()[0]
                     return be_verb.title() + ' ' + words[0].lower() + ' ' + ' '.join(words[1:be_verb_index]) + ' ' + ' '.join(words[be_verb_index + 1:len(words) - 1]) + '?'
@@ -248,10 +278,42 @@ def genYesNoQuestion(parse_tree):
 
     return None
 
+def genWhyQuestion(parse_tree):
+    words = parse_tree.leaves()
+    be_verbs = ['is', 'are', 'was', 'were']
+    lemmatizer = WordNetLemmatizer()
+    tags = parse_tree.pos()
+    (first_word, first_pos) = tags[0]
+    because_index = 0
+    if 'because' in words:
+        for word in words:
+            if word == 'because':
+                break
+            because_index += 1
+
+        for tag_s in parse_tree:
+            for tag_npvp in tag_s:
+                if tag_npvp.label() == 'NP':
+                    # length of these words is the index of the first word of VP part
+                    be_verb_index = len(tag_npvp.leaves())
+                # if the first word in VP part is be verb
+                if tag_npvp.label() == 'VP' and not (first_pos.startswith('PRP') and be_verb_index < 3):
+                    if tag_npvp.leaves()[0] in be_verbs:
+                        be_verb = tag_npvp.leaves()[0]
+                        return 'Why ' +be_verb+' '+ words[0].lower() + ' ' + ' '.join(words[1:be_verb_index]) + ' ' + ' '.join(words[be_verb_index + 1:because_index-1]) + '?'
+                    else:
+                        (curr_word, curr_pos) = tags[be_verb_index]
+                        if curr_pos.startswith('VBD'):
+                            present_tense = lemmatizer.lemmatize(curr_word, 'v')
+                            return "Why did " + words[0].lower() + ' ' + ' '.join(words[1:be_verb_index]) + ' ' + present_tense + ' ' + ' '.join(words[be_verb_index + 1:because_index]) + '?'
+
+    return None
+
+
 # print(genWhatQuestion(checkNPVP("This is good.")))
 # print(genYesNoQuestion(checkNPVP("He is amazingly available today.")))
 # print(genYesNoQuestion(checkNPVP("He is good student.")))
-getSentence("./data/set3/a6.txt", 100)
+getSentence("./data/set1/a4.txt", 300)
 
 
 
