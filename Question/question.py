@@ -1,17 +1,28 @@
 from nltk.parse.stanford import StanfordParser
 from nltk.tokenize import sent_tokenize
+from nltk.tokenize import word_tokenize
+from nltk.tag import StanfordNERTagger
+from nltk.tag import StanfordPOSTagger
 from nltk.corpus import wordnet
 import nltk
 import os
 import sys
+from nltk.stem.wordnet import WordNetLemmatizer
 
+NERTagger = StanfordNERTagger(model_filename = 'stanford-ner-2017-06-09/classifiers/english.all.3class.distsim.crf.ser.gz',\
+                               path_to_jar = 'stanford-ner-2017-06-09/stanford-ner.jar')
+
+POSTagger = StanfordPOSTagger('stanford-postagger-full-2017-06-09/models/english-bidirectional-distsim.tagger',
+                                  'stanford-postagger-full-2017-06-09/stanford-postagger.jar')
+
+LOCATIONS = ["in","at","on","inside","opposite","beside","above","behind","down"]
 
 def checkNPVP(sentence):
-    HOME_PATH = "E:/CMU/Natural Language Processing/StanfordNLP/stanford-parser-full-2017-06-09"
+    #HOME_PATH = "E:/CMU/Natural Language Processing/StanfordNLP/stanford-parser-full-2017-06-09"
     # HOME_PATH = "/home/stanford-parser-full/stanford-parser-full-2017-06-09"
-    os.environ['STANFORD_PARSER'] = HOME_PATH
-    os.environ['STANFORD_MODELS'] = HOME_PATH
-    ENG_Parser = StanfordParser(model_path=HOME_PATH + "/edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz")
+    #os.environ['STANFORD_PARSER'] = HOME_PATH
+    #os.environ['STANFORD_MODELS'] = HOME_PATH
+    ENG_Parser = StanfordParser('stanford-parser-full-2017-06-09/stanford-parser.jar','stanford-parser-full-2017-06-09/stanford-parser-3.8.0-models.jar')
     parse_list = list(ENG_Parser.raw_parse(sentence))
     # print(parse_list)
     # print(parse_list[0].pos())
@@ -57,14 +68,107 @@ def getSentence(file_name, num_sentence):
             if parse_tree:
                 what_question = genWhatQuestion(parse_tree)
                 yn_question = genYesNoQuestion(parse_tree)
-                if what_question:
-                    print("Ready for what questions: " + line)
+                where_question = getWhereQuestion(line)
+                # if what_question:
+                #     print("Ready for what questions: " + line)
+                #     index += 1
+                #     print(what_question)
+                # if yn_question:
+                #     print("Ready for yes/no question: "+line)
+                #     index += 1
+                #     print(yn_question)
+                if where_question:
+                    print("Ready for where questions: " + line)
                     index += 1
-                    print(what_question)
-                if yn_question:
-                    print("Ready for yes/no question: "+line)
-                    index += 1
-                    print(yn_question)
+                    print(where_question)
+
+
+def getWhereQuestion(sentence):
+    words = word_tokenize(sentence)
+    tagged_sent = POSTagger.tag(words)
+    print(tagged_sent)
+    result = []
+    flag = False
+    TENSE = ["do","does","did"]
+    for item in tagged_sent:
+        word = item[0]
+        tag = item[1]
+        if tag in ["VB","VBG","VBP"]:
+            if word == "are":
+                verb = "are"
+            else:
+                verb = TENSE[0]
+                result.append(word)
+        elif tag == "VBZ":
+            if word == "is":
+                verb == "is"
+            else:
+                verb = TENSE[1]
+                # result.append(WordNetLemmatizer().lemmatize(word, 'v'))
+                result.append(word)
+        elif tag in ["VBD","VBN"]:
+            if word in ["was","were"]:
+                verb == word
+            else:
+                verb = TENSE[2]
+                # result.append(WordNetLemmatizer().lemmatize(word,'v'))
+                result.append(word)
+        elif tag == "IN" and word in LOCATIONS:
+            flag = True
+            break
+        else:
+            result.append(word)
+    if flag:
+        return "Where "+verb+" "+" ".join(result)+" ?"
+
+print(getWhereQuestion("The film are on 15 May 2011 in competition at the 2011 Cannes Film Festival"))
+
+# def getWhenQuestion(sentence):
+#     words = word_tokenize(sentence)
+#     tagged_sent = POSTagger.tag(words)
+#     print(tagged_sent)
+#     result = []
+#     flag = False
+#     TENSE = ["do","does","did"]
+#     for item in tagged_sent:
+#         word = item[0]
+#         tag = item[1]
+#         if tag in ["VB","VBG","VBP"]:
+#             verb = TENSE[0]
+#             result.append(word)
+#         elif tag == "VBZ":
+#             verb = TENSE[1]
+#             #result.append(WordNetLemmatizer().lemmatize(word, 'v'))
+#             result.append(word)
+#         elif tag in ["VBD","VBN"]:
+#             verb = TENSE[2]
+#             #result.append(WordNetLemmatizer().lemmatize(word,'v'))
+#             result.append(word)
+#         elif tag == "IN" and word in LOCATIONS:
+#             flag = True
+#             break
+#         else:
+#             result.append(word)
+#     if flag:
+#         return "Where "+verb+" "+" ".join(result)+" ?"
+
+
+
+# import re
+# result = re.match(r"""(?ix)             # case-insensitive, verbose regex
+#     \b                    # match a word boundary
+#     (?:                   # match the following three times:
+#      (?:                  # either
+#       \d+                 # a number,
+#       (?:\.|st|nd|rd|th)* # followed by a dot, st, nd, rd, or th (optional)
+#       |                   # or a month name
+#       (?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*)
+#      )
+#      [\s./-]*             # followed by a date separator or whitespace (optional)
+#     ){3}                  # do this three times
+#     \b                    # and end at a word boundary.""", "The film are on 15 May 2011")
+#
+# print(result)
 
 
 def genWhoQuestion(parse_tree):
@@ -142,7 +246,8 @@ def genYesNoQuestion(parse_tree):
 
 
 
+
 #print(genWhatQuestion(checkNPVP("This is good.")))
 #print(genYesNoQuestion(checkNPVP("He is amazingly available today.")))
-print(genYesNoQuestion(checkNPVP("He is good student.")))
-# getSentence("./data/set2/a6.txt", 20)
+#print(genYesNoQuestion(checkNPVP("He is good student.")))
+#getSentence("./data/set4/a1.txt", 20)
