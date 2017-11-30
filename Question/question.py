@@ -21,6 +21,8 @@ POSTagger = StanfordPOSTagger(HOME_TO_STANFORDNLP+'stanford-postagger-full-2017-
 
 LOCATIONS = ["in", "at", "on", "inside", "opposite", "beside", "above", "behind", "down"]
 
+PRONOUN = ["she","he","it"]
+TITLE = ""
 
 def checkNPVP(parse_tree):
     #HOME_PATH = "E:/CMU/Natural Language Processing/StanfordNLP/stanford-parser-full-2017-06-09"
@@ -56,6 +58,7 @@ def getSentence(file_name, num_sentence):
     else:
         txt_file = open(file_name, 'r', encoding='utf-8').read()
     sent_tokenize_list = sent_tokenize(txt_file)
+    TITLE = sent_tokenize_list[0].split("\n")[0]
     print("Parsing the whole article, may take up to several minutes......")
     parsed_sentences = [sentence for line in ENG_Parser.raw_parse_sents(sent_tokenize_list) for sentence in line]
     index = 0
@@ -71,7 +74,7 @@ def getSentence(file_name, num_sentence):
                 yn_question_right = genYesNoQuestion(valid_parse_tree, False)
                 yn_question_wrong = genYesNoQuestion(valid_parse_tree, True)
                 # why_question = genWhyQuestion(valid_parse_tree)
-                if where_index > 5:
+                if where_index < 10:
                     where_question = getWhereQuestion(" ".join(valid_parse_tree.leaves()))
                     if where_question:
                         where_index += 1
@@ -103,13 +106,19 @@ def getSentence(file_name, num_sentence):
 def getWhereQuestion(sentence):
     words = word_tokenize(sentence)
     tagged_sent = POSTagger.tag(words)
+    ner_tagged_sen = NERTagger.tag(words)
+    print(ner_tagged_sen)
     result = []
-    flag = False
-    TENSE = ["do", "does", "did"]
-    for item in tagged_sent:
-        word = item[0]
-        tag = item[1]
-        if tag in ["VB", "VBG", "VBP"]:
+    flag1 = False
+    flag2 = False
+    TENSE = ["do","does","did"]
+    break_point = 0
+    index = 0
+    for item in zip(tagged_sent,ner_tagged_sen):
+        word = item[0][0]
+        tag = item[0][1]
+        ner = item[1][1]
+        if tag in ["VB","VBG","VBP"]:
             if word == "are":
                 verb = "are"
             else:
@@ -122,20 +131,27 @@ def getWhereQuestion(sentence):
                 verb = TENSE[1]
                 result.append(WordNetLemmatizer().lemmatize(word, 'v'))
                 # result.append(word)
-        elif tag in ["VBD", "VBN"]:
-            if word in ["was", "were"]:
+        elif tag in ["VBD","VBN"]:
+            if word in ["was","were"]:
                 verb == word
             else:
                 verb = TENSE[2]
-                # result.append(WordNetLemmatizer().lemmatize(word,'v'))
-                result.append(word)
+                result.append(WordNetLemmatizer().lemmatize(word,'v'))
+                # result.append(word)
         elif tag == "IN" and word in LOCATIONS:
-            flag = True
+            flag1 = True
+            break_point = index
+            result.append(word)
+        elif flag1 and ner in ["ORGANIZATION","LOCATION"] and index - break_point < 4:
+            flag2 = True
             break
         else:
             result.append(word)
-    if flag:
-        return "Where " + verb + " " + " ".join(result) + " ?"
+        index += 1
+    for result[0] in PRONOUN:
+        result[0] = TITLE
+    if flag1 and flag2:
+        return "Where "+verb+" "+" ".join(result[:break_point])+" ?"
 
 
 # print(getWhereQuestion("The film are on 15 May 2011 in competition at the 2011 Cannes Film Festival"))
