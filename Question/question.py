@@ -67,13 +67,16 @@ def getSentence(file_name, num_sentence):
             yn_question_right = genYesNoQuestion(valid_parse_tree,False)
             yn_question_wrong = genYesNoQuestion(valid_parse_tree,True)
             # why_question = genWhyQuestion(valid_parse_tree)
-            # where_question = getWhereQuestion(valid_parse_tree)
+            where_question = getWhereQuestion(" ".join(valid_parse_tree.leaves()))
             if who_question:
                 index += 1
                 print("Question " + str(index) + ": " + who_question)
             if what_question:
                 index += 1
                 print("Question " + str(index) + ": " + what_question)
+            if where_question:
+                index += 1
+                print("Question " + str(index) + ": " + where_question)
             if yn_question_right:
                 index += 1
                 print("Question " + str(index) + ": " + yn_question_right)
