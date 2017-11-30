@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from nltk.parse.stanford import StanfordParser
 from nltk.tokenize import sent_tokenize
 from nltk.tokenize import word_tokenize
@@ -57,35 +59,41 @@ def getSentence(file_name, num_sentence):
     print("Parsing the whole article, may take up to several minutes......")
     parsed_sentences = [sentence for line in ENG_Parser.raw_parse_sents(sent_tokenize_list) for sentence in line]
     index = 0
+    where_index = 0
     for parse_tree in parsed_sentences:
-        if index == num_sentence:
-            break
-        valid_parse_tree = checkNPVP(parse_tree)
-        if valid_parse_tree:
-            who_question = genWhoQuestion(valid_parse_tree)
-            what_question = genWhatQuestion(valid_parse_tree)
-            yn_question_right = genYesNoQuestion(valid_parse_tree,False)
-            yn_question_wrong = genYesNoQuestion(valid_parse_tree,True)
-            # why_question = genWhyQuestion(valid_parse_tree)
-            where_question = getWhereQuestion(" ".join(valid_parse_tree.leaves()))
-            if who_question:
-                index += 1
-                print("Question " + str(index) + ": " + who_question)
-            if what_question:
-                index += 1
-                print("Question " + str(index) + ": " + what_question)
-            if where_question:
-                index += 1
-                print("Question " + str(index) + ": " + where_question)
-            if yn_question_right:
-                index += 1
-                print("Question " + str(index) + ": " + yn_question_right)
-            if yn_question_wrong:
-                index += 1
-                print("Question " + str(index) + ": " + yn_question_wrong)
-            # if why_question:
-            #     index += 1
-            #     print("Question " + str(index) + ": " + why_question)
+        try:
+            if index == num_sentence:
+                break
+            valid_parse_tree = checkNPVP(parse_tree)
+            if valid_parse_tree:
+                who_question = genWhoQuestion(valid_parse_tree)
+                what_question = genWhatQuestion(valid_parse_tree)
+                yn_question_right = genYesNoQuestion(valid_parse_tree, False)
+                yn_question_wrong = genYesNoQuestion(valid_parse_tree, True)
+                # why_question = genWhyQuestion(valid_parse_tree)
+                if where_index > 5:
+                    where_question = getWhereQuestion(" ".join(valid_parse_tree.leaves()))
+                    if where_question:
+                        where_index += 1
+                        index += 1
+                        print("Question " + str(index) + ": " + where_question)
+                if who_question:
+                    index += 1
+                    print("Question " + str(index) + ": " + who_question)
+                if what_question:
+                    index += 1
+                    print("Question " + str(index) + ": " + what_question)
+                if yn_question_right:
+                    index += 1
+                    print("Question " + str(index) + ": " + yn_question_right)
+                if yn_question_wrong:
+                    index += 1
+                    print("Question " + str(index) + ": " + yn_question_wrong)
+                    # if why_question:
+                    #     index += 1
+                    #     print("Question " + str(index) + ": " + why_question)
+        except:
+            continue
 
     while index < num_sentence:
         index += 1
@@ -95,7 +103,6 @@ def getSentence(file_name, num_sentence):
 def getWhereQuestion(sentence):
     words = word_tokenize(sentence)
     tagged_sent = POSTagger.tag(words)
-    print(tagged_sent)
     result = []
     flag = False
     TENSE = ["do", "does", "did"]
@@ -113,8 +120,8 @@ def getWhereQuestion(sentence):
                 verb == "is"
             else:
                 verb = TENSE[1]
-                # result.append(WordNetLemmatizer().lemmatize(word, 'v'))
-                result.append(word)
+                result.append(WordNetLemmatizer().lemmatize(word, 'v'))
+                # result.append(word)
         elif tag in ["VBD", "VBN"]:
             if word in ["was", "were"]:
                 verb == word
@@ -194,7 +201,6 @@ def genWhatQuestion(parse_tree):
     prp = ['It', 'This', 'That', 'These', 'Those']
     words = parse_tree.leaves()
     tags = parse_tree.pos()
-    print(tags)
     for tag_s in parse_tree:
         for tag_npvp in tag_s:
             # for words in NP part
@@ -278,7 +284,6 @@ def genYesNoQuestion(parse_tree, set_wrong):
                     if curr_pos.startswith('VBD'):
                         present_tense = lemmatizer.lemmatize(curr_word, 'v')
                         return "Did "+ words[0].lower() + ' ' + ' '.join(words[1:be_verb_index]) + ' ' + present_tense +' '+ ' '.join(words[be_verb_index + 1:len(words) - 1])+'?'
-
     return None
 
 def genWhyQuestion(parse_tree):
