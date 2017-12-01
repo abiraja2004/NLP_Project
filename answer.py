@@ -404,10 +404,13 @@ def answerOne(file, question):
 
 
 def answer(file, questions):
-    q = open(questions)
-    qs = q.read().splitlines()
-    for question in qs:
-        print(answerOne(file,question))
+    try:
+        q = open(questions)
+        qs = q.read().splitlines()
+        for question in qs:
+            print(answerOne(file,question))
+    except:
+        print("")
 
 answer(sys.argv[1],sys.argv[2])
 
