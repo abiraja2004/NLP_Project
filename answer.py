@@ -18,14 +18,6 @@ NERTagger = StanfordNERTagger(model_filename = 'stanford-ner-2017-06-09/classifi
 
 depParse =StanfordDependencyParser(HOME_PATH + "/stanford-parser.jar",HOME_PATH+'/stanford-parser-3.8.0-models.jar')
 
-# NERTagger = StanfordNERTagger(model_filename = '/Users/jhl/Desktop/stanford-ner-2017-06-09/classifiers/english.muc.7class.distsim.crf.ser.gz',\
-#                                path_to_jar = '/Users/jhl/Desktop/stanford-ner-2017-06-09/stanford-ner.jar')
-
-# depParse =StanfordDependencyParser("/Users/jhl/Desktop/stanford-parser-full-2017-06-09/stanford-parser.jar",
-#             '/Users/jhl/Desktop/stanford-parser-full-2017-06-09/stanford-parser-3.8.0-models.jar')
-
-
-
 YESNOSTART = set(["is",'are','am','was','were',
                 'do','does','did','has','have','had','can',
                 'could','would','might'])
@@ -136,7 +128,6 @@ def best5(file,question):
         bm25sim = sentence[1]
         ssw = [stemmer.stem(w.lower()) for w in word_tokenize(s)]
         thisSim = similarity(question,ssw,idfDict)
-        # print(thisSim, bm25sim)
         sims.append((s, (lambda1 * thisSim + lambda2 * bm25sim)))
     sortedSim = sorted(sims, key=lambda sentence: sentence[1],reverse = True)
     filtered = list(filter(lambda sentence: sentence [1] > 1.5, sortedSim))
@@ -152,15 +143,15 @@ def questionType(q):
     return q[0].lower()
 
 def rawToYesNo(qtokens, answer):
-    # count the negation tokens and compare the number
+    # count the negation tokens, pairs of antonyms
     qneg = 0
     aneg = 0
     ansTokens = word_tokenize(answer)
     for tok in qtokens:
-        if stemmer.stem(tok.lower()) in NEGATION:
+        if (tok.lower()) in NEGATION:
             qneg += 1
     for tok in ansTokens:
-        if stemmer.stem(tok.lower()) in NEGATION:
+        if (tok.lower()) in NEGATION:
             aneg += 1
     antCount = 0
     for tok in qtokens:
@@ -168,9 +159,9 @@ def rawToYesNo(qtokens, answer):
         for syn in wordnet.synsets(tok):
             for l in syn.lemmas():
                 if l.antonyms():
-                    antonyms.append(stemmer.stem(l.antonyms()[0].name()))
+                    antonyms.append((l.antonyms()[0].name()))
         for tok in ansTokens:
-            if stemmer.stem(tok) in antonyms:
+            if (tok) in antonyms:
                 antCount += 1
     if qneg == aneg:
         if antCount % 2 == 1:
@@ -309,7 +300,6 @@ def locateUsingNer(best5Sen, qtype, q):
                     return sen
     
     if qtype == "how":
-        # print(best5Sen)
         qt = word_tokenize(q)
         if qt[1] == "many":
             for sen in senLiteral:
@@ -327,9 +317,6 @@ def locateUsingNer(best5Sen, qtype, q):
                 for w in word_tokenize(sen):
                     if w.isdigit():
                         return sen
-   
-        # pos tag raw Ans get cd
-
     return senLiteral[0]
 
 def getCategory(ff):
@@ -346,13 +333,6 @@ def getCategory(ff):
                     res = arttype
     return res
 
-def testGet():
-    for setNo in range(4):
-        for articleNo in range(10):
-            path = 'data/set%d/a%d.txt'%(setNo+1,articleNo+1)
-            f = open(path)
-            file = f.read().splitlines()
-
 def postProcess(ans):
     ans = word_tokenize(ans)
     for pronoun in PRONOUNS:
@@ -364,7 +344,6 @@ def postProcess(ans):
 
 def answerOne(file, question):
     global title, metadata
-
     f = open(file)
     ff = f.read().splitlines()                  # splitlines to avoid whitespace issue
     title = ff[0]
@@ -413,30 +392,3 @@ def answer(file, questions):
         print("")
 
 answer(sys.argv[1],sys.argv[2])
-
-# (answer('data/set1/a6.txt','ourqs/David_Beckham.txt'))
-# (answer('data/set3/a10.txt','ourqs/Esperanto.txt'))
-# (answer('data/set2/a8.txt','ourqs/Hercules_(constellation).txt'))
-# (answer('data/set3/a9.txt','ourqs/Java_(programming_language).txt'))
-# (answer('data/set1/a10.txt','ourqs/John_Terry.txt'))
-# (answer('data/set3/a6.txt','ourqs/Latin.txt'))
-# (answer('data/set3/a7.txt','ourqs/Python_(programming_language).txt'))
-# (answer('data/set2/a10.txt','ourqs/Crux.txt'))
-
-
-# problematic questions:
-'''
-1. How many music albums in Esperanto in the nineties?
-    sixties, seventies, eighties, nineties. cannot find the correct one. 
-
-4. where was John Terry born?
-    metadata
-5. Which team does John play for?
-6. What is CPython?
-    too short
-7. Is 10h 55.13m a right ascension coordinate?
-    ......
-
-'''
-
-
